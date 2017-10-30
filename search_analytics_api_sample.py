@@ -358,7 +358,7 @@ if __name__ == '__main__':
   server.login('jarvis.newsteller@gmail.com','jarvis123')
   runtime = datetime.now()-now
   print(runtime)
-  # server.sendmail('SEO_BOT','deepesh.p@practo.com','the code was run successfully')
+  server.sendmail('SEO_BOT','deepesh.p@practo.com','the code was run successfully')
   server.quit()
 
 
