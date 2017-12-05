@@ -1,8 +1,15 @@
 import argparse
 import sys
 from googleapiclient import sample_tools
-from datetime import datetime
-import smtplib
+from datetime import date,timedelta,datetime
+import mysql.connector as connector
+try:
+  conn = connector.connect(user='root',password='deepesh',host='localhost',database='test')
+  print('database connection established')
+  cursor = conn.cursor()
+except:
+  print("there is an error while contacting the database")
+
 
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
@@ -26,7 +33,7 @@ def main(argv,properties):
   # descending; any days without data will be missing from the results.
   list_of_propery_names = ['India-DCH','Indonesia','Philippines','Diagnostics']
   if properties not in list_of_propery_names:
-    
+    # pass
     request = {
         'startDate': flags.start_date,
         'endDate': flags.end_date,
@@ -277,7 +284,7 @@ def print_table(response, title):
     response: The server response to be printed as a formatted table.
     title: The title of the table.
   """
-  print (title + ':')
+  # print (title + ':')
 
   if 'rows' not in response:
     print ('Empty response')
@@ -285,7 +292,7 @@ def print_table(response, title):
 
   rows = response['rows']
   row_format = '{:<20}' + '{:>20}' * 4
-  print (row_format.format('Date', 'Clicks', 'Impressions', 'CTR', 'Position'))
+  # print (row_format.format('Date', 'Clicks', 'Impressions', 'CTR', 'Position'))
   for row in rows:
     keys = ''
     # Keys are returned only if one or more dimensions are requested.
@@ -293,7 +300,9 @@ def print_table(response, title):
       keys = u','.join(row['keys'])
     print (row_format.format(
         keys, row['clicks'], row['impressions'], str(two_dec(row['ctr']*100))+"%", two_dec(row['position'])))
-    print("\n")
+    cursor.execute('insert into webmasters(product,country,date,position,clicks,impressions,CTR,timestamp) values(%s,%s,%s,%s,%s,%s,%s,now())',(title,title,keys,two_dec(row['position']),row['clicks'], row['impressions'],two_dec(row['ctr']*100)))
+    conn.commit()
+    # print("\n")
 
 
 def add_responses(response1,response2):
@@ -328,13 +337,18 @@ def add_responses(response1,response2):
   final_response['rows'][0]['impressions'] = response2_impressions+response1_impressions
   final_response['rows'][0]['ctr'] = response2_ctr+response1_ctr
   final_response['rows'][0]['position'] = (response2_position+response1_position)/2
+  final_response['rows'][0]['keys'][0] = response1['rows'][0]['keys'][0]
 
   return final_response
 
 if __name__ == '__main__':
   # argvs1 = ['search_analytics_api_sample.py', 'https://www.practo.com/pt-br', '2017-09-30']
   name_of_the_code = 'search_analytics_api_sample.py'
-  now=datetime.now()
+  today_date=(date.today()-timedelta(days=3)).isoformat()
+  # strt_Date1=(date.today()-timedelta(days=10)).isoformat()
+  row_format = '{:<20}' + '{:>20}' * 4
+  print (row_format.format('Date', 'Clicks', 'Impressions', 'CTR', 'Position'))
+    
   dict_of_urls = {'Brazil':'https://www.practo.com/pt-br',
   'Indonesia':'https://www.practo.com/id-id/indonesia',
   'Consult':'https://www.practo.com/consult',
@@ -350,16 +364,17 @@ if __name__ == '__main__':
     argvs1=[]
     argvs1.append(name_of_the_code)
     argvs1.append(dict_of_urls[properties])
-    argvs1.append(str(now.year)+"-"+str(now.month)+"-"+str(now.day-3))
-    argvs1.append(str(now.year)+"-"+str(now.month)+"-"+str(now.day-3))
+    # argvs1.append(dict_of_urls[today_date])
+    # argvs1.append(dict_of_urls[today_date])
+    print (properties + ':')
+    argvs1.append(today_date)
+    argvs1.append(today_date)
+    # for i in ['2017-11-27','2017-11-26','2017-11-25','2017-11-24','2017-11-23','2017-11-22','2017-11-21']:
+    #   argvs1[2]=i
+    #   argvs1[3]=argvs1[2]
+    #   main(argvs1,properties)
     main(argvs1,properties)
-  server = smtplib.SMTP('smtp.gmail.com',587)
-  server.starttls()
-  server.login('jarvis.newsteller@gmail.com','jarvis123')
-  runtime = datetime.now()-now
-  print(runtime)
-  server.sendmail('SEO_BOT','deepesh.p@practo.com','the code was run successfully')
-  server.quit()
+  conn.close()
 
 
 
